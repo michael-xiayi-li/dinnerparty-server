@@ -3,15 +3,17 @@ var app = express();
 var cors = require('cors');
 const bodyParser = require('body-parser');
 var mongoose = require('mongoose');
-
-
 var MongoClient = require('mongodb').MongoClient
+var multer = require('multer');
+var upload = multer({ dest: 'uploads/', limits: {fieldSize: 4*1024*1024}});
 
 var db;
 
 
-var db_uri ='mongodb://michaelxiayili:dinnerparty@cluster0-shard-00-00-hosal.mongodb.net:27017,cluster0-shard-00-01-hosal.mongodb.net:27017,cluster0-shard-00-02-hosal.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true';
-
+//michaelxiayili
+//dp2019
+//var db_uri ='mongodb://michaelxiayili:dinnerparty@cluster0-shard-00-00-hosal.mongodb.net:27017,cluster0-shard-00-01-hosal.mongodb.net:27017,cluster0-shard-00-02-hosal.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true';
+var db_uri = 'mongodb://michaelxiayili:dinnerparty2019@ds151076.mlab.com:51076/dinnerparty-db'
 //MongoClient.connect('mongodb://localhost:27017', (err,database) => {
 
 MongoClient.connect (db_uri, (err,database) => {
@@ -22,6 +24,10 @@ MongoClient.connect (db_uri, (err,database) => {
 		if(err) throw err;
 
 	});
+  db.createCollection("parties", function(err,res){
+    if(err) throw err;
+
+  });
 
 });
 
@@ -53,7 +59,26 @@ app.post("/postForm", (req,res,next) => {
 	res.sendStatus(200);
 });
 
+app.post("/postRestCardCreator", upload.single('fileHandler'),(req,res,next) =>{
+  res.header("Access-Control-Allow-Origin", "*");
 
+  console.log(req);
+  db.collection("parties").insertOne(req.body);
+  res.sendStatus(200);
+
+
+});
+
+app.get("/invitationCard", (req,res,next) =>{
+    res.header("Access-Control-Allow-Origin", "*");
+   db.collection("parties").findOne({}, function(err,result){
+
+      if(err) return console.log(err);
+      res.jsonp(result);
+   })
+
+
+});
 
 app.use(cors());
 
@@ -61,6 +86,8 @@ app.use(cors());
 app.listen(3001, () => {
  console.log("Server running on port 3001");
 });
+
+
 
 
 
@@ -318,19 +345,6 @@ function populateGuestList(spreadsheetID,auth,res){
 
     });
 
-
-
-    
-
-    /*
-
-    db.collection("guests").find().forEach(function(doc){
-
-    var guest = new Array(doc['Name'], doc["E-mail"], doc['Dietary Restrictions']);
-    addSheetRow(guest, spreadsheetID, auth);
-
-    });
-    */
   }
 });
 
@@ -388,12 +402,6 @@ function addGuestRow(guest,spreadsheetID,auth, row){
     }), (err,result)=>{
           if(err){
             console.log(err);
-          }
-          else{
-
-            console.log("rowmade");
-            
-
           }
         }
 
