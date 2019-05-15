@@ -6,6 +6,7 @@ var mongoose = require('mongoose');
 var MongoClient = require('mongodb').MongoClient
 var multer = require('multer');
 var upload = multer({ dest: 'uploads/', limits: {fieldSize: 4*1024*1024}});
+var config = require('./config.json');
 
 var db;
 
@@ -13,7 +14,7 @@ var db;
 //michaelxiayili
 //dp2019
 //var db_uri ='mongodb://michaelxiayili:dinnerparty@cluster0-shard-00-00-hosal.mongodb.net:27017,cluster0-shard-00-01-hosal.mongodb.net:27017,cluster0-shard-00-02-hosal.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true';
-var db_uri = 'mongodb://michaelxiayili:dinnerparty2019@ds151076.mlab.com:51076/dinnerparty-db'
+var db_uri = 'mongodb://' + config.db_username + ':' + config.db_password + '@ds151076.mlab.com:51076/dinnerparty-db'
 //MongoClient.connect('mongodb://localhost:27017', (err,database) => {
 
 MongoClient.connect (db_uri, (err,database) => {
@@ -34,6 +35,21 @@ MongoClient.connect (db_uri, (err,database) => {
 
 
 
+//e-mail capabilities
+/////////////////////////////////////////////////////////////////
+var nodemailer = require('nodemailer');
+
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: config.email_username,
+    pass: config.email_password
+  }
+});
+
+
+///////////////////////////////////////////////////////////////////
+
 
 
 
@@ -50,12 +66,33 @@ app.use(bodyParser.urlencoded({
 
 app.use(bodyParser.json());
 
+
+
+
 app.post("/postForm", (req,res,next) => {
 	res.header("Access-Control-Allow-Origin", "*");
 
 	console.log(req.body);
 
 	db.collection("guests").insertOne(req.body);
+
+  console.log(req.body['E-mail']);
+
+  var mailOptions = {
+  from: 'michaelxiayili@gmail.com',
+  to: req.body['E-mail'],
+  subject: 'Save the Date!',
+  text: 'Vishnu is a walking mouth with a narcissistic complex'
+  };
+
+  transporter.sendMail(mailOptions, function(error, info){
+  if (error) {
+    console.log(error);
+  } else {
+    console.log('Email sent: ' + info.response);
+  }
+  });
+
 	res.sendStatus(200);
 });
 
@@ -65,9 +102,13 @@ app.post("/postRestCardCreator", upload.single('fileHandler'),(req,res,next) =>{
   console.log(req);
   db.collection("parties").insertOne(req.body);
   res.sendStatus(200);
-
-
 });
+
+
+
+
+
+
 
 app.get("/invitationCard", (req,res,next) =>{
     res.header("Access-Control-Allow-Origin", "*");
@@ -417,6 +458,7 @@ function addGuestRow(guest,spreadsheetID,auth, row){
             console.log(err);
           }
         }
-
-
 }
+
+
+
