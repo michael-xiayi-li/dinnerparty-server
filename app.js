@@ -220,12 +220,16 @@ const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 // time.
 const TOKEN_PATH = "token.json";
 
+app.get("/guestList/:invitationId", (req, res) => {});
+
 app.get("/createGuestSheet", (req, res, next) => {
   // Load client secrets from a local file.
+  console.log("sheet");
+  console.log(req.query);
   fs.readFile("credentials.json", (err, content) => {
     if (err) return console.log("Error loading client secret file:", err);
     // Authorize a client with credentials, then call the Google Sheets API.
-    authorizeRes(JSON.parse(content), createGuestList, res);
+    authorizeRes(JSON.parse(content), createGuestList, req, res);
   });
 });
 
@@ -235,7 +239,7 @@ app.get("/createGuestSheet", (req, res, next) => {
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
  */
-function authorizeRes(credentials, callback, res) {
+function authorizeRes(credentials, callback, req, res) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
     client_id,
@@ -247,7 +251,7 @@ function authorizeRes(credentials, callback, res) {
   fs.readFile(TOKEN_PATH, (err, token) => {
     if (err) return getNewToken(oAuth2Client, callback);
     oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client, res);
+    callback(oAuth2Client, req, res);
   });
 }
 
@@ -336,7 +340,7 @@ function listMajors(auth) {
   );
 }
 
-function createGuestList(auth, res) {
+function createGuestList(auth, req, res) {
   const resource = {
     properties: {
       title: "guestList"
@@ -356,7 +360,7 @@ function createGuestList(auth, res) {
         console.log(spreadsheet.data.spreadsheetId);
         var spreadsheetID = spreadsheet.data.spreadsheetId;
 
-        populateGuestList(spreadsheetID, auth, res);
+        populateGuestList(spreadsheetID, auth, req, res);
 
         //console.log(JSON.stringify(spreadsheet, null, 2));
       }
@@ -364,7 +368,7 @@ function createGuestList(auth, res) {
   );
 }
 
-function populateGuestList(spreadsheetID, auth, res) {
+function populateGuestList(spreadsheetID, auth, req, res) {
   const sheets = google.sheets({ version: "v4", auth });
 
   let values = [
@@ -373,8 +377,7 @@ function populateGuestList(spreadsheetID, auth, res) {
 
       "Name",
       "E-mail",
-      "Dietary Restrictions",
-      "ID"
+      "Dietary Restrictions"
     ]
     // Additional rows ...
   ];
@@ -399,15 +402,18 @@ function populateGuestList(spreadsheetID, auth, res) {
           .find({})
           .toArray(function(err, result) {
             if (err) throw err;
-
+            var row = 0;
             for (var i = 0; i < result.length; i++) {
-              guest = [
-                result[i]["Name"],
-                result[i]["E-mail"],
-                result[i]["Dietary Restrictions"],
-                result[i]["id"]
-              ];
-              addGuestRow(guest, spreadsheetID, auth, i + 2);
+              if (result[i]["id"] == req.query.cardId) {
+                guest = [
+                  result[i]["Name"],
+                  result[i]["E-mail"],
+                  result[i]["Dietary Restrictions"]
+                  // result[i]["id"]
+                ];
+                addGuestRow(guest, spreadsheetID, auth, row + 2);
+                row = row + 1;
+              }
             }
 
             var sheetURL = {
