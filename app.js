@@ -1,213 +1,233 @@
 var express = require("express");
 var app = express();
-var cors = require('cors');
-const bodyParser = require('body-parser');
-var mongoose = require('mongoose');
-var MongoClient = require('mongodb').MongoClient
-var multer = require('multer');
-var upload = multer({ dest: 'uploads/', limits: {fieldSize: 4*1024*1024}});
-var config = require('./config.json');
+var cors = require("cors");
+const bodyParser = require("body-parser");
+var mongoose = require("mongoose");
+var MongoClient = require("mongodb").MongoClient;
+var multer = require("multer");
+var upload = multer({
+  dest: "uploads/",
+  limits: { fieldSize: 4 * 1024 * 1024 }
+});
+var config = require("./config.json");
+var Mailchimp = require("mailchimp-api-v3");
+
+var mailchimp = new Mailchimp(config.mailchimpAPI);
 
 var db;
-
 
 //michaelxiayili
 //dp2019
 //var db_uri ='mongodb://michaelxiayili:dinnerparty@cluster0-shard-00-00-hosal.mongodb.net:27017,cluster0-shard-00-01-hosal.mongodb.net:27017,cluster0-shard-00-02-hosal.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true';
-var db_uri = 'mongodb://' + config.db_username + ':' + config.db_password + '@ds151076.mlab.com:51076/dinnerparty-db'
+var db_uri =
+  "mongodb://" +
+  config.db_username +
+  ":" +
+  config.db_password +
+  "@ds151076.mlab.com:51076/dinnerparty-db";
 //MongoClient.connect('mongodb://localhost:27017', (err,database) => {
 
-MongoClient.connect (db_uri, (err,database) => {
-	
-	if(err) return console.log(err);
-	db=database.db("dinnerparty-db");
-	db.createCollection("guests", function(err,res){
-		if(err) throw err;
-
-	});
-  db.createCollection("parties", function(err,res){
-    if(err) throw err;
-
+MongoClient.connect(db_uri, (err, database) => {
+  if (err) return console.log(err);
+  db = database.db("dinnerparty-db");
+  db.createCollection("guests", function(err, res) {
+    if (err) throw err;
   });
-
+  db.createCollection("parties", function(err, res) {
+    if (err) throw err;
+  });
 });
-
-
-
 
 //e-mail capabilities
 /////////////////////////////////////////////////////////////////
-var nodemailer = require('nodemailer');
+var nodemailer = require("nodemailer");
 
 var transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: config.email_username,
     pass: config.email_password
   }
 });
 
-
 ///////////////////////////////////////////////////////////////////
 
-
-
-
 app.get("/url", (req, res, next) => {
- res.json(["Tony","Lisa","Michael","Ginger","Food"]);
+  res.json(["Tony", "Lisa", "Michael", "Ginger", "Food"]);
 });
 
-
-
-
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 
 app.use(bodyParser.json());
 
-
-
-
-app.post("/postForm", (req,res,next) => {
-	res.header("Access-Control-Allow-Origin", "*");
-
-	console.log(req.body);
-
-	db.collection("guests").insertOne(req.body);
-
-  console.log(req.body['E-mail']);
-
-  var mailOptions = {
-  from: 'michaelxiayili@gmail.com',
-  to: req.body['E-mail'],
-  subject: 'Save the Date!',
-  text: 'Vishnu is a walking mouth with a narcissistic complex'
-  };
-
-  transporter.sendMail(mailOptions, function(error, info){
-  if (error) {
-    console.log(error);
-  } else {
-    console.log('Email sent: ' + info.response);
-  }
-  });
-
-	res.sendStatus(200);
-});
-
-app.post("/postRestCardCreator", upload.single('fileHandler'),(req,res,next) =>{
+app.post("/postForm", (req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
 
-  console.log(req);
-  db.collection("parties").insertOne(req.body);
+  console.log(req.body);
+
+  db.collection("guests").insertOne(req.body);
+
+  console.log(req.body["E-mail"]);
+
+  var mailOptions = {
+    from: "michaelxiayili@gmail.com",
+    to: req.body["E-mail"],
+    subject: "Save the Date!",
+    text: "Vishnu is a walking mouth with a narcissistic complex"
+  };
+
+  transporter.sendMail(mailOptions, function(error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+
+  mailchimp
+    .get("/lists")
+    .then(function(results) {
+      console.log(results);
+    })
+    .catch(function(err) {
+      console.log(err);
+    });
+
+  mailchimp
+    .post("/lists/" + config.mailchimpListID + "/members", {
+      email_address: req.body["E-mail"],
+      status: "subscribed"
+    })
+    .then(function(results) {
+      console.log("success");
+    })
+    .catch(function(err) {
+      console.log(err);
+    });
+
+  mailchimp
+    .get("/lists/" + config.mailchimpListID + "/segments")
+    .then(function(results) {
+      var segments = results["segments"];
+      for (var i = 0; i < segments.length; i++) {
+        console.log("segments");
+        var segment = segments[i];
+        if (segment["name"] == req.body["id"]) {
+          mailchimp
+            .post(
+              "/lists/" +
+                config.mailchimpListID +
+                "/segments/" +
+                segment["id"] +
+                "/members",
+              {
+                email_address: req.body["E-mail"]
+              }
+            )
+            .then(function(results) {
+              console.log("successtag");
+            })
+            .catch(function(err) {
+              console.log(err);
+            });
+        }
+      }
+    })
+    .catch(function(err) {
+      console.log(err);
+    });
+
   res.sendStatus(200);
 });
 
-
-
-
-
-
-
-app.get("/invitationCard", (req,res,next) =>{
+app.post(
+  "/postRestCardCreator",
+  upload.single("fileHandler"),
+  (req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-   db.collection("parties").findOne({}, function(err,result){
 
-      if(err) return console.log(err);
-      res.jsonp(result);
-   })
+    db.collection("parties").insertOne(req.body, function(err, result) {
+      var insertedID = result["ops"][0]["_id"];
+
+      mailchimp
+        .post("/lists/" + config.mailchimpListID + "/segments", {
+          name: insertedID,
+          static_segment: []
+        })
+        .then(function(results) {
+          console.log("success");
+        })
+        .catch(function(err) {
+          console.log(err);
+        });
+    });
+    res.sendStatus(200);
+  }
+);
+
+app.get("/invitationCard", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  db.collection("parties").findOne({}, function(err, result) {
+    if (err) return console.log(err);
+    res.jsonp(result);
+  });
 });
 
-app.post("/invitationList", (req,res,next) =>{
-
-
+app.post("/invitationList", (req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   console.log("registered");
 
-  console.log(req.body['index']);
-  var index = req.body['index'];
+  console.log(req.body["index"]);
+  var index = req.body["index"];
   console.log(req.body);
 
-  var partyQuery = db.collection("parties").find().sort({'Date': 1});
+  var partyQuery = db
+    .collection("parties")
+    .find()
+    .sort({ Date: 1 });
 
   var track = 0;
-  
-  partyQuery.each(function(err,doc){
 
-    if (track==index){
+  partyQuery.each(function(err, doc) {
+    if (track == index) {
       res.jsonp(doc);
     }
-    if(doc!=null){
-      console.log(doc['Date']);
+    if (doc != null) {
+      console.log(doc["Date"]);
     }
-    track=track+1;
+    track = track + 1;
   });
-    
 });
 
 app.use(cors());
 
-
 app.listen(3001, () => {
- console.log("Server running on port 3001");
+  console.log("Server running on port 3001");
 });
 
-
-
-
-
-/*
-
-key=AIzaSyC1rV4FPt4r47C75pFhkjjZkv6uUcIyXQM
-
-
-client_id=347313223605-t41c61fltpq2mr9m1bp5nbb2o5g274c2.apps.googleusercontent.com
-
-
-
-client secret = IQbq4dXntvjvx35E7NLo8qZ_
-
-
-NOde:
-
-client_id=1001308905487-trfjoul27s7gv838enimo51c0eotv73a.apps.googleusercontent.com
-
-client_secret=pimsAxVTvIBQJgLxs1X7V8cG
-
-*/
-
-const fs = require('fs');
-const readline = require('readline');
-const {google} = require('googleapis');
+const fs = require("fs");
+const readline = require("readline");
+const { google } = require("googleapis");
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = 'token.json';
+const TOKEN_PATH = "token.json";
 
-
-
-
-
-
-
-app.get("/createGuestSheet", (req,res,next) => {
+app.get("/createGuestSheet", (req, res, next) => {
   // Load client secrets from a local file.
-  fs.readFile('credentials.json', (err, content) => {
-    if (err) return console.log('Error loading client secret file:', err);
+  fs.readFile("credentials.json", (err, content) => {
+    if (err) return console.log("Error loading client secret file:", err);
     // Authorize a client with credentials, then call the Google Sheets API.
-    authorizeRes(JSON.parse(content), createGuestList,res);
+    authorizeRes(JSON.parse(content), createGuestList, res);
   });
-
-
-
-
 });
-
-
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -215,32 +235,35 @@ app.get("/createGuestSheet", (req,res,next) => {
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
  */
-function authorizeRes(credentials, callback,res) {
-  const {client_secret, client_id, redirect_uris} = credentials.installed;
+function authorizeRes(credentials, callback, res) {
+  const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
-      client_id, client_secret, redirect_uris[0]);
+    client_id,
+    client_secret,
+    redirect_uris[0]
+  );
 
   // Check if we have previously stored a token.
   fs.readFile(TOKEN_PATH, (err, token) => {
     if (err) return getNewToken(oAuth2Client, callback);
     oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client,res);
+    callback(oAuth2Client, res);
   });
 }
 
-
-
-
 /**
- * Create an OAuth2 client with the given credentials, and then execute the
+ e* Create an OAuth2 client with the given credentials, and then execute the
  * given callback function.
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
  */
 function authorize(credentials, callback) {
-  const {client_secret, client_id, redirect_uris} = credentials.installed;
+  const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
-      client_id, client_secret, redirect_uris[0]);
+    client_id,
+    client_secret,
+    redirect_uris[0]
+  );
 
   // Check if we have previously stored a token.
   fs.readFile(TOKEN_PATH, (err, token) => {
@@ -250,11 +273,6 @@ function authorize(credentials, callback) {
   });
 }
 
-
-
-
-
-
 /**
  * Get and store new token after prompting for user authorization, and then
  * execute the given callback with the authorized OAuth2 client.
@@ -263,23 +281,27 @@ function authorize(credentials, callback) {
  */
 function getNewToken(oAuth2Client, callback) {
   const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: SCOPES,
+    access_type: "offline",
+    scope: SCOPES
   });
-  console.log('Authorize this app by visiting this url:', authUrl);
+  console.log("Authorize this app by visiting this url:", authUrl);
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout,
+    output: process.stdout
   });
-  rl.question('Enter the code from that page here: ', (code) => {
+  rl.question("Enter the code from that page here: ", code => {
     rl.close();
     oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error('Error while trying to retrieve access token', err);
+      if (err)
+        return console.error(
+          "Error while trying to retrieve access token",
+          err
+        );
       oAuth2Client.setCredentials(token);
       // Store the token to disk for later program executions
-      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+      fs.writeFile(TOKEN_PATH, JSON.stringify(token), err => {
         if (err) console.error(err);
-        console.log('Token stored to', TOKEN_PATH);
+        console.log("Token stored to", TOKEN_PATH);
       });
       callback(oAuth2Client);
     });
@@ -292,173 +314,154 @@ function getNewToken(oAuth2Client, callback) {
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
 function listMajors(auth) {
-  const sheets = google.sheets({version: 'v4', auth});
-  sheets.spreadsheets.values.get({
-    spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-    range: 'Class Data!A2:E',
-  }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
-    const rows = res.data.values;
-    if (rows.length) {
-      console.log('Name, Major:');
-      // Print columns A and E, which correspond to indices 0 and 4.
-      rows.map((row) => {
-        console.log(`${row[0]}, ${row[4]}`);
-      });
-    } else {
-      console.log('No data found.');
+  const sheets = google.sheets({ version: "v4", auth });
+  sheets.spreadsheets.values.get(
+    {
+      spreadsheetId: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      range: "Class Data!A2:E"
+    },
+    (err, res) => {
+      if (err) return console.log("The API returned an error: " + err);
+      const rows = res.data.values;
+      if (rows.length) {
+        console.log("Name, Major:");
+        // Print columns A and E, which correspond to indices 0 and 4.
+        rows.map(row => {
+          console.log(`${row[0]}, ${row[4]}`);
+        });
+      } else {
+        console.log("No data found.");
+      }
     }
-  });
+  );
 }
 
-
-
-
-
-
-function createGuestList(auth,res){
-  
-
-
+function createGuestList(auth, res) {
   const resource = {
-  properties: {
-    title: 'guestList',
-  },
+    properties: {
+      title: "guestList"
+    }
   };
 
-  const sheets = google.sheets({version: 'v4', auth});
-  sheets.spreadsheets.create({
+  const sheets = google.sheets({ version: "v4", auth });
+  sheets.spreadsheets.create(
+    {
       resource,
-        fields: 'spreadsheetId',
-  },(err, spreadsheet) =>{
-    
-    if (err){
-      
-      console.log(err);
+      fields: "spreadsheetId"
+    },
+    (err, spreadsheet) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(spreadsheet.data.spreadsheetId);
+        var spreadsheetID = spreadsheet.data.spreadsheetId;
+
+        populateGuestList(spreadsheetID, auth, res);
+
+        //console.log(JSON.stringify(spreadsheet, null, 2));
+      }
     }
-  else{
-    
-    console.log(spreadsheet.data.spreadsheetId);
-    var spreadsheetID = spreadsheet.data.spreadsheetId;
-
-    populateGuestList(spreadsheetID,auth,res);
-
-    //console.log(JSON.stringify(spreadsheet, null, 2));
-  }
-});
+  );
 }
 
-
-function populateGuestList(spreadsheetID,auth,res){
-
-
-  const sheets = google.sheets({version: 'v4', auth});
-
-
+function populateGuestList(spreadsheetID, auth, res) {
+  const sheets = google.sheets({ version: "v4", auth });
 
   let values = [
-  [
-    // Cell values ...
+    [
+      // Cell values ...
 
-    "Name", "E-mail","Dietary Restrictions", "ID",
-  ],
-  // Additional rows ...
+      "Name",
+      "E-mail",
+      "Dietary Restrictions",
+      "ID"
+    ]
+    // Additional rows ...
   ];
 
   const resource = {
-  values,
+    values
   };
 
+  sheets.spreadsheets.values.update(
+    {
+      spreadsheetId: spreadsheetID,
+      range: "Sheet1",
+      valueInputOption: "RAW",
+      resource
+    },
+    (err, result) => {
+      if (err) {
+        // Handle error
+        console.log(err);
+      } else {
+        db.collection("guests")
+          .find({})
+          .toArray(function(err, result) {
+            if (err) throw err;
 
-  sheets.spreadsheets.values.update({
-  spreadsheetId: spreadsheetID,
-  range: "Sheet1",
-  valueInputOption: 'RAW',
-  resource,
-    }, (err, result) => {
-  if (err) {
-    // Handle error
-    console.log(err);
-  } else {
-    
-    db.collection("guests").find({}).toArray(function(err, result) {
-    if (err) throw err;
-  
-  
-      for (var i=0;i<result.length;i++){
-        
+            for (var i = 0; i < result.length; i++) {
+              guest = [
+                result[i]["Name"],
+                result[i]["E-mail"],
+                result[i]["Dietary Restrictions"],
+                result[i]["id"]
+              ];
+              addGuestRow(guest, spreadsheetID, auth, i + 2);
+            }
 
-          guest = [result[i]['Name'], result[i]['E-mail'], result[i]['Dietary Restrictions'], result[i]['id']];
-          addGuestRow(guest,spreadsheetID,auth,i+2);
-
+            var sheetURL = {
+              spreadsheetID: spreadsheetID
+            };
+            res.json(sheetURL);
+          });
       }
-
-
-      var sheetURL = {
-        'spreadsheetID' : spreadsheetID,
-      }
-      res.json(sheetURL);
-    });
-  }
-});
-
-
-
-
-
+    }
+  );
 }
 
-function addSheetRow(guest,spreadsheetID,auth){
-  
-
-
-  const sheets = google.sheets({version: 'v4', auth});
+function addSheetRow(guest, spreadsheetID, auth) {
+  const sheets = google.sheets({ version: "v4", auth });
   console.log(guest);
 
-  sheets.spreadsheets.values.get({
-  spreadsheetId: spreadsheetID,
-  range: "Sheet1!A:A",
-//  valueInputOption: 'RAW',
-  }, (err, result)=>{
-    if(err){
+  sheets.spreadsheets.values.get(
+    {
+      spreadsheetId: spreadsheetID,
+      range: "Sheet1!A:A"
+      //  valueInputOption: 'RAW',
+    },
+    (err, result) => {
+      if (err) {
         console.log(err);
+      } else {
+        var guestRow = result.data.values.length + 1;
+
+        addGuestRow(guest, spreadsheetID, auth, guestRow);
+      }
     }
-    else{
-      var guestRow = result.data.values.length +1;
-
-      addGuestRow(guest,spreadsheetID,auth,guestRow);
-
-
-    }
-  });
-
+  );
 }
 
-function addGuestRow(guest,spreadsheetID,auth, row){
-
-    const sheets = google.sheets({version: 'v4', auth});
-    let values = [
+function addGuestRow(guest, spreadsheetID, auth, row) {
+  const sheets = google.sheets({ version: "v4", auth });
+  let values = [
     // Cell values ...
-    guest,
-  // Additional rows ...
+    guest
+    // Additional rows ...
   ];
   const resource = {
-  values,
+    values
   };
 
-   sheets.spreadsheets.values.update({
-
-  spreadsheetId: spreadsheetID,
-  range: "Sheet1!A"+row,
-  valueInputOption: 'RAW',
-  resource,
-
-    }), (err,result)=>{
-          if(err){
-            console.log(err);
-          }
-        }
+  sheets.spreadsheets.values.update({
+    spreadsheetId: spreadsheetID,
+    range: "Sheet1!A" + row,
+    valueInputOption: "RAW",
+    resource
+  }),
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      }
+    };
 }
-
-
-
