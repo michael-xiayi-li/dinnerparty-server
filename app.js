@@ -11,14 +11,13 @@ var upload = multer({
 });
 var config = require("./config.json");
 var Mailchimp = require("mailchimp-api-v3");
-
+const ObjectId = mongoose.Types.ObjectId;
 var mailchimp = new Mailchimp(config.mailchimpAPI);
 
 var db;
 
 //michaelxiayili
 //dp2019
-//var db_uri ='mongodb://michaelxiayili:dinnerparty@cluster0-shard-00-00-hosal.mongodb.net:27017,cluster0-shard-00-01-hosal.mongodb.net:27017,cluster0-shard-00-02-hosal.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true';
 var db_uri =
   "mongodb://" +
   config.db_username +
@@ -52,10 +51,6 @@ var transporter = nodemailer.createTransport({
 
 ///////////////////////////////////////////////////////////////////
 
-app.get("/url", (req, res, next) => {
-  res.json(["Tony", "Lisa", "Michael", "Ginger", "Food"]);
-});
-
 app.use(
   bodyParser.urlencoded({
     extended: true
@@ -67,12 +62,50 @@ app.use(bodyParser.json());
 app.post("/postForm", (req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
 
-  console.log(req.body);
+  var oid = req.body.id;
 
-  db.collection("guests").insertOne(req.body);
+  db.collection("parties").findOne({ _id: ObjectId(oid) }, function(
+    err,
+    result
+  ) {
+    if (err) console.log(err);
 
-  console.log(req.body["E-mail"]);
+    if (result.GuestNumber >= result.GuestLimit) {
+      console.log("guests at capcity");
+      email_rejection(req, res);
+    } else {
+      email_and_add_to_mailchimp(req, res);
+      db.collection("guests").insertOne(req.body);
+      db.collection("parties").findOneAndUpdate(
+        { _id: ObjectId(oid) },
+        { $inc: { GuestNumber: 1 } },
+        function(error, result) {
+          if (error) return console.log(error);
+        }
+      );
+    }
+  });
 
+  res.sendStatus(200);
+});
+
+function email_rejection(req, res) {
+  var mailOptions = {
+    from: "michaelxiayili@gmail.com",
+    to: req.body["E-mail"],
+    subject: "Sorry, dinner is full!",
+    text:
+      "Hey, \nSo it looks like we're currently full right now, if you have any questions, e-mail me back!"
+  };
+  transporter.sendMail(mailOptions, function(error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+}
+function email_and_add_to_mailchimp(req, res) {
   var mailOptions = {
     from: "michaelxiayili@gmail.com",
     to: req.body["E-mail"],
@@ -140,9 +173,7 @@ app.post("/postForm", (req, res, next) => {
     .catch(function(err) {
       console.log(err);
     });
-
-  res.sendStatus(200);
-});
+}
 
 app.post(
   "/postRestCardCreator",
@@ -163,6 +194,26 @@ app.post(
         })
         .catch(function(err) {
           console.log(err);
+        });
+
+      //convert strings in db to int
+      db.collection("parties")
+        .find({ _id: ObjectId(insertedID) })
+        .forEach(function(data) {
+          db.collection("parties").updateOne(
+            {
+              _id: data._id,
+              Date: data.Date,
+              Description: data.Description,
+              image: data.image
+            },
+            {
+              $set: {
+                GuestLimit: parseInt(data.GuestLimit),
+                GuestNumber: parseInt(data.GuestNumber)
+              }
+            }
+          );
         });
     });
     res.sendStatus(200);
