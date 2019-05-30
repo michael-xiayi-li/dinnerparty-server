@@ -220,6 +220,17 @@ app.post(
   }
 );
 
+app.post("/login", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  console.log("verifying");
+  var email = req.body.email;
+  var password = req.body.password;
+
+  var auth = email == "joe@joe.com" && password == "asdf";
+
+  var response = { authenticated: auth };
+  res.jsonp(response);
+});
 app.get("/invitationCard", (req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   db.collection("parties").findOne({}, function(err, result) {
