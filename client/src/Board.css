@@ -1,0 +1,107 @@
+.Board {
+	text-align: center;
+}
+
+.square {
+	background-color: white;
+	border: 2px outset black;
+}
+
+.CenterCard {
+	/*width: 500px;
+	height: 500px;
+
+
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin: auto;
+
+	position: absolute;
+	*/
+	margin: auto;
+}
+
+.RestImage {
+	display: block;
+	margin: auto;
+	width: 500px;
+	height: 350px;
+}
+
+#centerDisplay {
+	display: inline-block;
+}
+
+.LeftArrowButton {
+	width: 100px;
+	height: 100px;
+	position: relative;
+	top: 0;
+	bottom: 400;
+	left: 200;
+	right: 0;
+}
+.RightArrowButton {
+	width: 100px;
+	height: 100px;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 200;
+	margin: auto;
+	border-color: black;
+}
+.CardText {
+	display: block;
+	margin: auto;
+	text-align: center;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+.CardButton {
+	display: inline-block;
+	margin-left: 34%;
+	margin-top: 7%;
+	border-radius: 4px;
+	background-color: white;
+}
+
+.LeftButton {
+	display: inline-block;
+	margin-left: 3%;
+	border-radius: 4px;
+	background-color: white;
+}
+
+.RightButton {
+	display: inline-block;
+	margin-left: 33%;
+	border-radius: 4px;
+	background-color: white;
+}
+
+.LeftCardButton {
+	display: block;
+	margin: auto;
+	margin-top: 15px;
+}
+
+.FormTitle {
+	display: block;
+	margin: auto;
+	text-align: center;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+.FormEntry {
+	display: block;
+	margin: auto;
+	text-align: center;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
