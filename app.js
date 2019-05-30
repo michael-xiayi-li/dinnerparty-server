@@ -226,7 +226,7 @@ app.post("/login", (req, res, next) => {
   var email = req.body.email;
   var password = req.body.password;
 
-  var auth = email == "joe@joe.com" && password == "asdf";
+  var auth = email == config.admin_email && password == config.admin_password;
 
   var response = { authenticated: auth };
   res.jsonp(response);
