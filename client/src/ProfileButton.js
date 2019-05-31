@@ -9,13 +9,14 @@ import {
 } from "react-router-dom";
 import Button from "@material-ui/core/Button";
 
+var config = require("./config.json");
 class ProfileButton extends Component {
 	constructor(props) {
 		super(props);
 		this.handleClick = this.handleClick.bind(this);
 	}
 	handleClick = () => {
-		window.open("https://michaelli050007.typeform.com/to/axIBzW");
+		window.open(config.typeform_url);
 	};
 
 	render() {

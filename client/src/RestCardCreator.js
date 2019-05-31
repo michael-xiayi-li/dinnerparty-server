@@ -14,7 +14,7 @@ import TextField from "@material-ui/core/TextField";
 import FormControl from "@material-ui/core/FormControl";
 import Button from "@material-ui/core/Button";
 import { withStyles } from "@material-ui/core/styles";
-
+var config = require("./config.json");
 class RestCardCreator extends Component {
   constructor(props) {
     super(props);
@@ -64,7 +64,11 @@ class RestCardCreator extends Component {
 
     const config = { headers: { "Content-Type": "multipart/form-data" } };
     axios
-      .post("http://localhost:3001/postRestCardCreator", bodyFormData, config)
+      .post(
+        "http://" + config.host + "/postRestCardCreator",
+        bodyFormData,
+        config
+      )
       .then(function(response) {
         console.log("received");
         console.log(response);

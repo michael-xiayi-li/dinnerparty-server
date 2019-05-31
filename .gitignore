@@ -1,5 +1,6 @@
 node_modules/ 
 client/node_modules/
+client/build/
 config.json
 credentials.json
 token.json
