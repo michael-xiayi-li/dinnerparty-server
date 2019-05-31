@@ -13,6 +13,12 @@ var config = require("./config.json");
 var Mailchimp = require("mailchimp-api-v3");
 const ObjectId = mongoose.Types.ObjectId;
 var mailchimp = new Mailchimp(config.mailchimpAPI);
+const port = process.env.port || 3001;
+// ... other imports
+const path = require("path");
+
+// ... other app.use middleware
+app.use(express.static(path.join(__dirname, "client", "build")));
 
 var db;
 
@@ -268,10 +274,6 @@ app.post("/invitationList", (req, res, next) => {
 });
 
 app.use(cors());
-
-app.listen(3001, () => {
-  console.log("Server running on port 3001");
-});
 
 const fs = require("fs");
 const readline = require("readline");
@@ -535,3 +537,10 @@ function addGuestRow(guest, spreadsheetID, auth, row) {
       }
     };
 }
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
+});
+app.listen(port, () => {
+  console.log("Server running on port 3001");
+});
