@@ -8,7 +8,7 @@ import {
 import Button from "@material-ui/core/Button";
 import axios from "axios";
 import RestCardArg from "./RestCardArg.js";
-var config = require("./config.js");
+var config = require("./config.json");
 
 const customStyles = {
   content: {
