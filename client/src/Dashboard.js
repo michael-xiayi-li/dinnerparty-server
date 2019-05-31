@@ -28,6 +28,7 @@ import AdminButton from "./AdminButton.js";
 import GuestForm from "./GuestForm.js";
 import InvitationButton from "./InvitationButton.js";
 import SignIn from "./SignIn.js";
+var config = require("./config.json");
 
 const drawerWidth = 240;
 
@@ -125,7 +126,7 @@ class Dashboard extends React.Component {
     var index = this.state.index;
     var requestIndex = { index: index };
     axios
-      .post("http://localhost:3001/invitationList", requestIndex)
+      .post("http://" + config.host + "/invitationList", requestIndex)
       .then(function(response) {
         console.log(response);
         if (response.data != null) {
@@ -144,7 +145,7 @@ class Dashboard extends React.Component {
     var newIndex = Math.max(index + indexChange, 0);
     var requestIndex = { index: newIndex };
     axios
-      .post("http://localhost:3001/invitationList", requestIndex)
+      .post("http://" + config.host + "/invitationList", requestIndex)
       .then(function(response) {
         console.log(response);
         if (response.data != null) {

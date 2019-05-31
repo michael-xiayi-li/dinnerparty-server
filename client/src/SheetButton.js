@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import axios from "axios";
 import ListItem from "@material-ui/core/ListItem";
-
+var config = require("./config.json");
 class SheetButton extends Component {
   constructor(props) {
     super(props);
@@ -11,7 +11,7 @@ class SheetButton extends Component {
   handleClick() {
     var cardId = this.props.cardInfo._id;
     axios
-      .get("http://localhost:3001/createGuestSheet", {
+      .get("http://" + config.host + "/createGuestSheet", {
         params: {
           cardId: cardId
         }

@@ -6,6 +6,7 @@ import Card from "@material-ui/core/Card";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 import axios from "axios";
+var config = require("./config.json");
 class GuestForm extends Component {
   constructor(props) {
     super(props);
@@ -26,7 +27,7 @@ class GuestForm extends Component {
   submitForm() {
     var bodyFormData = this.state;
     axios
-      .post("http://localhost:3001/postForm", bodyFormData)
+      .post("http://" + config.host + "/postForm", bodyFormData)
       .then(function(response) {
         console.log("received");
         console.log(response);

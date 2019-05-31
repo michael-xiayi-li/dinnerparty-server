@@ -8,6 +8,7 @@ import {
 import Button from "@material-ui/core/Button";
 import axios from "axios";
 import RestCardArg from "./RestCardArg.js";
+var config = require("./config.js");
 
 const customStyles = {
   content: {
@@ -32,7 +33,7 @@ class GetButton extends Component {
   handleClick() {
     var self = this;
     axios
-      .get("http://localhost:3001/invitationCard")
+      .get("http://" + config.host + "/invitationCard")
       .then(function(response) {
         console.log(response);
         self.setState(response.data);
@@ -42,7 +43,7 @@ class GetButton extends Component {
       });
 
     axios
-      .get("http://localhost:3001/invitationList")
+      .get("http://" + config.host + "/invitationList")
       .then(function(response) {})
       .catch(function(error) {
         console.log(error);
@@ -52,7 +53,7 @@ class GetButton extends Component {
   setCardDetails() {
     var self = this;
     axios
-      .get("http://localhost:3001/invitationCard")
+      .get("http://" + config.host + "/invitationCard")
       .then(function(response) {
         console.log(response);
         self.setState(response.data);

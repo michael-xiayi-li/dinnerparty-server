@@ -7,7 +7,7 @@ import {
   Route,
   Redirect
 } from "react-router-dom";
-
+var config = require("./config.json");
 class SubmitButton extends Component {
   constructor(props) {
     super(props);
@@ -31,7 +31,7 @@ class SubmitButton extends Component {
     console.log(bodyFormData);
 
     axios
-      .post("http://localhost:3001/postForm", bodyFormData)
+      .post("http://" + config.host + "/postForm", bodyFormData)
       .then(function(response) {
         console.log("received");
         console.log(response);

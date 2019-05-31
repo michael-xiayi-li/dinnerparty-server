@@ -14,6 +14,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import Modal from "react-modal";
 import axios from "axios";
 import RestCardCreator from "./RestCardCreator.js";
+var config = require("./config.json");
 
 function MadeWithLove() {
   return (
@@ -109,7 +110,7 @@ class SignIn extends React.Component {
       password: this.state.password
     };
     axios
-      .post("http://localhost:3001/login", bodyFormData)
+      .post("http://" + config.host + "/login", bodyFormData)
       .then(function(response) {
         console.log(response.data);
         if (response.data.authenticated) {
